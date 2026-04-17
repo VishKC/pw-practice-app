@@ -4,7 +4,8 @@ test.beforeEach(async ({page}) => {
     await page.goto('http://localhost:4200/')
 })
 
-test.describe('Using the Grid', () => {
+test.describe.only('Using the Grid', () => {
+    //test.describe.configure({retries: 2})
   
     test.beforeEach('Form Layouts page', async({page}) => {
         await page.getByText('Forms').click()
@@ -61,4 +62,56 @@ test('Checkboxes', async({page}) => {
     const cardFooter = page.locator('nb-card-footer')
     const button = await cardFooter.getByRole('button', {name: 'Show toast'})
     await button.click()
+})
+
+test('Dropdowns', async({page}) => {
+
+    const dropdown = page.locator('ngx-header nb-select')
+    await dropdown.click()
+
+    //page.getByRole('List')
+    //page.getByRole('listitem')
+
+    const optionList = page.locator('nb-option-list nb-option')
+    expect(optionList).toHaveText(["Light", "Dark", "Cosmic", "Corporate"])
+    await optionList.filter({hasText: 'Cosmic'}).click()
+
+    const header = page.locator('nb-layout-header')
+    await expect(header).toHaveCSS("background-color", "rgb(50, 50, 89)")
+
+    const colors = {
+        "Light": "rgb(255, 255, 255)",
+        "Dark": "rgb(34, 43, 69)",
+        "Cosmic": "rgb(50, 50, 89)",
+        "Corporate": "rgb(255, 255, 255)"
+    }
+    
+    await dropdown.click()
+
+    for(const color in colors){
+        await optionList.filter({hasText: color}).click()
+        await expect(header).toHaveCSS('background-color', colors[color])
+        if(color !== "Corporate")
+            await dropdown.click()
+    }
+    
+})
+
+test('toolTips', async({page}) => {
+
+    await page.getByText('Modal & Overlays').click()
+    await page.getByText('Tooltip').click()
+
+    const toolTipCard = page.locator('nb-card', {hasText: 'Tooltip Placements'})
+    const topToolTip = toolTipCard.getByRole('button', {name: 'Top'})
+    await topToolTip.hover()
+
+    //page.getByRole('tooltip') works only for the first tooltip, so we need to use the locator to get the tooltip text
+    
+    // const toolTipText = page.locator('nb-tooltip')
+    // await expect(toolTipText).toHaveText('This is a tooltip')
+
+    const toolTip = page.locator('nb-tooltip').textContent()
+    expect(toolTip).toEqual('This is a tooltip')
+
 })

@@ -8,7 +8,10 @@
   },
   "scripts": {
     "ng": "ng",
-    "start": "ng serve"
+    "start": "ng serve",
+    "uiComponents-chrome": "mpx playwright test uiComponents.spec.ts --project=chromium",
+    "uiComponents-firefox": "mpx playwright test uiComponents.spec.ts --project=firefox",
+    "uiComponents-all": "npm run uiComponents-chrome && npm run uiComponents-firefox"
   },
   "dependencies": {
     "@angular/animations": "^14.2.12",
