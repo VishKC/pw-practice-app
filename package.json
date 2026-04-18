@@ -9,8 +9,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "uiComponents-chrome": "mpx playwright test uiComponents.spec.ts --project=chromium",
-    "uiComponents-firefox": "mpx playwright test uiComponents.spec.ts --project=firefox",
+    "uiComponents-chrome": "npx playwright test uiComponents.spec.ts --project=chromium",
+    "uiComponents-firefox": "npx playwright test uiComponents.spec.ts --project=firefox",
     "uiComponents-all": "npm run uiComponents-chrome && npm run uiComponents-firefox"
   },
   "dependencies": {

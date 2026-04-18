@@ -1,7 +1,7 @@
 import {expect, test} from '@playwright/test';
 
 test.beforeEach(async ({page}) => {
-    await page.goto('http://localhost:4200/')
+    await page.goto('/')
 })
 
 test.describe.only('Using the Grid', () => {
@@ -114,4 +114,147 @@ test('toolTips', async({page}) => {
     const toolTip = page.locator('nb-tooltip').textContent()
     expect(toolTip).toEqual('This is a tooltip')
 
+})
+
+test('Dialog boxes', async({page}) => {
+
+    await page.getByText('Tables & Data').click()
+    await page.getByText('Smart Table').click()
+    
+    page.on('dialog', dialog =>{
+        expect(dialog.message()).toEqual('Are you sure you want to delete?')
+        dialog.accept() 
+    })
+
+    await page.getByRole('table').locator('tr', {hasText:"mdo@gmail.com"}).locator('.nb-trash').click();
+    await expect(page.locator('table tr').first()).not.toHaveText('mdo@gmail.com')
+})
+
+test('Modify by row data', async({page}) => {
+    await page.getByText('Tables & Data').click()
+    await page.getByText('Smart Table').click()
+
+    const targetRow = page.getByRole('row', {name: 'barbara@yandex.ru'})
+    await targetRow.locator('.nb-edit').click()
+    await page.locator('input-editor').getByPlaceholder('Age').clear()
+    await page.locator('input-editor').getByPlaceholder('Age').fill('20')
+    await page.locator('.nb-checkmark').click()
+
+//    await expect(targetRow).toHaveText('20')
+
+
+})
+
+test('Modify by column data', async({page}) => {
+    await page.getByText('Tables & Data').click()
+    await page.getByText('Smart Table').click()
+
+    await page.locator('ng2-smart-table-pager').getByText('2').click()
+
+    const targetRowById = page.getByRole('row', {name:"11"}).filter({has: page.locator('td').nth(1).getByText('11')})
+      
+    await targetRowById.locator('.nb-edit').click()
+    await page.locator('input-editor').getByPlaceholder('E-mail').clear()
+    await page.locator('input-editor').getByPlaceholder('E-mail').fill('vishkc@example.com')
+    await page.locator('.nb-checkmark').click()
+    await expect(targetRowById.locator('td').nth(5)).toHaveText('vishkc@example.com')
+})
+
+test('Search and verify results', async({page}) => {
+
+    const ageList = ["20", "30", "40", "200"]
+
+    await page.getByText('Tables & Data').click()
+    await page.getByText('Smart Table').click()
+
+    for(const age of ageList){
+    await page.locator('input-filter').getByPlaceholder('Age').clear()
+    await page.locator('input-filter').getByPlaceholder('Age').fill(age)
+    await page.waitForTimeout(500) // wait for the table to update with the filtered results
+    const ageRows = page.locator('tbody tr')
+
+    for(const row of await ageRows.all()){
+        const cellValue = await row.locator('td').last().textContent()
+        if(age == "200"){
+            expect(await page.locator('table tbody').textContent()).toEqual(" No data found ")
+        }
+        else{
+            expect(cellValue).toEqual(age)
+        }
+        
+    }
+
+    }
+
+})
+
+test('Learn Date picker', async({page}) => {
+
+    await page.getByText('Forms').click()
+    await page.getByText('Datepicker').click()
+    
+    const calenderInputField = page.getByPlaceholder('Form Picker')
+    await calenderInputField.click()
+    
+    await page.locator('[class="day-cell ng-star-inserted"]').getByText('2', {exact: true}).click()
+    await expect(calenderInputField).toHaveValue('Apr 2, 2026')
+
+})
+
+test('Date picker using JS', async({page}) => {
+
+    await page.getByText('Forms').click()
+    await page.getByText('Datepicker').click()
+    
+    const calenderInputField = page.getByPlaceholder('Form Picker')
+    await calenderInputField.click()
+
+    let date = new Date()
+    date.setDate(date.getDate() + 5)
+    const expectedDate = date.getDate().toString()
+    const expectedMonthShort = date.toLocaleString('default', { month: 'short' })
+    const expectedMonthlong = date.toLocaleString('default', { month: 'long' })
+    const expectedYear = date.getFullYear().toString()
+
+    let calendarMonthAndYear = await page.locator('nb-calendar-view-mode').textContent()
+    let expectedMonthAndYear = `${expectedMonthlong} ${expectedYear}`
+    while(!calendarMonthAndYear?.includes(expectedMonthAndYear)){
+        await page.locator('nb-calendar-pageable-navigation [data-name="chevron-right"]').click()
+        calendarMonthAndYear = await page.locator('nb-calendar-view-mode').textContent()
+    }
+
+    await page.locator('[class="day-cell ng-star-inserted"]').getByText(expectedDate, {exact: true}).click()
+    const expectedDateInInput = `${expectedMonthShort} ${expectedDate}, ${expectedYear}`
+    await expect(calenderInputField).toHaveValue(expectedDateInInput)
+
+})
+
+
+test('automate Sliders', async ({page}) => {
+
+    //update attribute cx & cy
+    const tempGauge = page.locator('[tabtitle="Temperature"] ngx-temperature-dragger circle')
+    await tempGauge.evaluate( node => {
+        node.setAttribute('cx', '264.180')
+        node.setAttribute('cy', '180.481')
+
+    })
+    await tempGauge.click()
+
+    const tempBox = page.locator('[tabtitle="Temperature"] ngx-temperature-dragger')
+    await tempBox.scrollIntoViewIfNeeded()
+
+    const box = await tempBox.boundingBox()
+    if(box){
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    //console.log("X: "+x+" Y: "+y)
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x+100, y)
+    await page.mouse.move(x+100, y+100)
+    await page.mouse.up()
+    await expect(tempBox).toContainText('30')
+
+    }
 })
